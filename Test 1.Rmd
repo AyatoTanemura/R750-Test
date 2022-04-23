@@ -1,0 +1,137 @@
+---
+title: "Test 1"
+author: "Ayato Tanemura"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(comment = ">", echo=FALSE)
+
+library(tidyverse)
+library(nortest)
+library(car)
+library(RColorBrewer)
+library(biotools)
+library(PMCMRplus)
+library(mctest)
+
+```
+# Q1
+```{r include=FALSE}
+df <- read.csv("test1-2022.csv", header = T) %>% 
+  mutate(female = factor(female)
+         , prog = factor(prog))
+#dim(df)
+#str(df)
+#head(df)
+
+boxplot(read~female+prog, data = df)
+
+# Normality Assumption
+outlier1 <- boxplot(read~female+prog, data = df)$out
+outlier1
+
+out.df <- df[df$female == 1 & df$prog == 3 & df$read == 68,]
+out.df
+
+df.Noout <- df[-which(df$id %in% out.df$id), ]
+nrow(df) - nrow(df.Noout)
+
+shapiro.test(df.Noout$read)
+
+# Homogeneity assumption
+leveneTest(read ~ female * prog, data = df.Noout)
+```
+
+```{r}
+# Two-way ANOVA
+fit.read <- aov(read ~ female * prog, data = df.Noout)
+summary(fit.read)
+```
+## 1
+In the results, you can conclude the following, based on the p-value and a significance level of 0.05.
+
+* The p-value for female is 0.277. There is non-significant differences between female in relationship with read, which indicates that the types of gender are not associated with different reading score.
+
+* The p-vale for prog is 0.000. There is significant differences between prog and read, which indicates that the types of programs are associated with different reading score.
+
+* The p-value for the interaction between female*prog is 0.252. There is non-significant interaction between female and prog, which indicates that the relationship between gender types and reading score does not depend on the types of programs. 
+
+## 2
+```{r}
+# Tukey test
+TukeyHSD(fit.read)
+
+```
+
+According to the result in (1), interaction effect is not sgnificant.
+
+# Q2
+## 1
+```{r}
+al_df <- read.csv("alumnigiving.csv", header = T) %>% 
+  mutate(State = as.factor(State))
+#dim(al_df)
+#head(al_df)
+#str(al_df)
+
+reg.fit <- lm(Alumni.Giving.Rate ~ Graduation.Rate, data = al_df)
+summary(reg.fit)
+```
+
+The coefficient table shows that Graduation.Rate is significant at 0.05 level of significance. 
+
+So the model of predicting would be as following:
+
+Alumni.Giving.Rate = -68.76 + 1.181(Graduation.Rate)
+
+Overall Result:
+
+F(61.34, 46) and p-value = 0.000 which is less than 0.05 significance level. Thus, null hypothesis is rejected, we can conclude that this model is statistically significant. 
+
+AD-R2 = 0.5621. We can conclude that approximately 56% variation in Alumni.Giving.Rate can be explained by this model.
+
+## 2
+```{r}
+reg2.fit <- lm(Alumni.Giving.Rate ~ Graduation.Rate + Percentage.of.Classes.U20 + Student.Faculty.Ratio, data = al_df)
+summary(reg2.fit)
+```
+
+Estimate model: 
+
+Alumni.Giving.Rate = -20.72 + 0.7482(Graduation.Rate) + 0.02904(Percentage.of.Classes.U20) - 1.192(Student.Faculty.Ratio)
+
+The above coefficient table shows that only Graduation.Rate and Student.Faculty.Ratio (p-value = 0.000) are significant at 0.05 level of significance. So those two variables play an important role in predicting Alumni.Giving.Rate.
+So the model of predicting will only include Graduation.Rate and Student.Faculty.Ratio in the model.
+
+```{r}
+reg3.fit <-lm(Alumni.Giving.Rate ~ Graduation.Rate + Student.Faculty.Ratio, data = al_df)
+summary(reg3.fit)
+```
+Estimate equation:
+
+Alumni.Giving.Rate = -19.11 + 0.7557(Graduation.Rate) - 1.246(Student.Faculty.Ratio)
+
+Overall result:
+
+F(52.41, 45), p-value = 0.000 which is less than 0.05 significance level. Thus, null hypothesis is rejected. We conclude that this model is statistically significant.
+
+AD-R2 = 0.6863. We can conclude that approximately 68% variation in Alumni.Giving.Rate can be explained by this model.
+
+To compare between part one and two, the variation that can be explained is increased after adding other independent variables.
+
+```{r}
+imcdiag(reg3.fit)
+```
+
+In this case, we can observe smaller tolerance and larger VIF values for both Graduation.Rate and Student.Faculty.Ratio. 
+These results confirms the multicollinearity issue that we detected before when assessing the significance of the age coefficient and the correlation matrix.
+
+
+
+
+
+
+
+
